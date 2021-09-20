@@ -19,13 +19,13 @@ namespace CachingRedis.Controllers
     {
         private readonly IMemoryCache memoryCache;
         private readonly ApplicationDbContext context;
-        //private readonly IDistributedCache distributedCache;
+        private readonly IDistributedCache distributedCache;
 
-        public CustomerController(IMemoryCache memoryCache, ApplicationDbContext context/*, IDistributedCache distributedCache*/)
+        public CustomerController(IMemoryCache memoryCache, ApplicationDbContext context, IDistributedCache distributedCache)
         {
             this.memoryCache = memoryCache;
             this.context = context;
-            //this.distributedCache = distributedCache;
+            this.distributedCache = distributedCache;
         }
         [HttpGet]
         public async Task<IActionResult> GetAllCustomersUsingInMemoryCaching()
@@ -44,29 +44,29 @@ namespace CachingRedis.Controllers
             }
             return Ok(customerList);
         }
-        //[HttpGet("redis")]
-        //public async Task<IActionResult> GetAllCustomersUsingRedisCache()
-        //{
-        //    var cacheKey = "customerList";
-        //    string serializedCustomerList;
-        //    var customerList = new List<Customer>();
-        //    var redisCustomerList = await distributedCache.GetAsync(cacheKey);
-        //    if (redisCustomerList != null)
-        //    {
-        //        serializedCustomerList = Encoding.UTF8.GetString(redisCustomerList);
-        //        customerList = JsonConvert.DeserializeObject<List<Customer>>(serializedCustomerList);
-        //    }
-        //    else
-        //    {
-        //        customerList = await context.Customers.ToListAsync();
-        //        serializedCustomerList = JsonConvert.SerializeObject(customerList);
-        //        redisCustomerList = Encoding.UTF8.GetBytes(serializedCustomerList);
-        //        var options = new DistributedCacheEntryOptions()
-        //            .SetAbsoluteExpiration(DateTime.Now.AddMinutes(10))
-        //            .SetSlidingExpiration(TimeSpan.FromMinutes(2));
-        //        await distributedCache.SetAsync(cacheKey, redisCustomerList, options);
-        //    }
-        //    return Ok(customerList);
-        //}
+        [HttpGet("redis")]
+        public async Task<IActionResult> GetAllCustomersUsingRedisCache()
+        {
+            var cacheKey = "customerList";
+            string serializedCustomerList;
+            var customerList = new List<Customer>();
+            var redisCustomerList = await distributedCache.GetAsync(cacheKey);
+            if (redisCustomerList != null)
+            {
+                serializedCustomerList = Encoding.UTF8.GetString(redisCustomerList);
+                customerList = JsonConvert.DeserializeObject<List<Customer>>(serializedCustomerList);
+            }
+            else
+            {
+                customerList = await context.Customers.ToListAsync();
+                serializedCustomerList = JsonConvert.SerializeObject(customerList);
+                redisCustomerList = Encoding.UTF8.GetBytes(serializedCustomerList);
+                var options = new DistributedCacheEntryOptions()
+                    .SetAbsoluteExpiration(DateTime.Now.AddMinutes(10))
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(2));
+                await distributedCache.SetAsync(cacheKey, redisCustomerList, options);
+            }
+            return Ok(customerList);
+        }
     }
 }

@@ -45,6 +45,12 @@ namespace CachingRedis
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CachingRedis", Version = "v1" });
             });
+
+            //For Redis Caching
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = "localhost:6379";
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
